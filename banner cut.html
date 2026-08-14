@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banner Cut</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  :root {
+    --bg: #FAF7F5;
+    --bg-soft: #F3EEF7;
+    --surface: #FFFFFF;
+    --surface-alt: #FBF8FD;
+    --border: #E7DFF0;
+    --border-strong: #D8CCE8;
+    --ink: #423B4D;
+    --ink-soft: #6E6480;
+    --muted: #A79BB8;
+    --primary: #B79CDB;
+    --primary-strong: #9D7FC7;
+    --primary-ink: #3F2F57;
+    --accent-pink: #F3B4C6;
+    --accent-mint: #A8DCC6;
+    --accent-mint-ink: #2E6B52;
+    --accent-peach: #F6CBA3;
+    --danger: #E48CA0;
+    --danger-strong: #D46E86;
+    --danger-ink: #7A2B41;
+    --ok: #6FBE9C;
+    --shadow: 0 8px 24px -12px rgba(122, 99, 158, 0.28);
+    --shadow-sm: 0 2px 8px -2px rgba(122, 99, 158, 0.18);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+  }
+
+  html {
+    background: var(--bg);
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    background:
+      radial-gradient(circle at 12% 8%, rgba(183, 156, 219, 0.16), transparent 45%),
+      radial-gradient(circle at 88% 18%, rgba(243, 180, 198, 0.16), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(168, 220, 198, 0.14), transparent 45%),
+      var(--bg);
+    color: var(--ink);
+    font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 18px 80px;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 22px;
+    margin-bottom: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .masthead h1 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: clamp(18px, 4.4vw, 22px);
+    line-height: 1.2;
+    margin: 0;
+    color: var(--primary-ink);
+  }
+
+  .issue-tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent-mint-ink);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+    background: rgba(168, 220, 198, 0.28);
+    border: 1px solid rgba(168, 220, 198, 0.6);
+    border-radius: 999px;
+    padding: 6px 14px;
+  }
+
+  /* ---------- Panel: generic card block ---------- */
+  .panel {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .panel-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--primary-ink);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-body { padding: 18px; }
+
+  /* ---------- Dropzone ---------- */
+  .indicia {
+    position: relative;
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 28px 18px;
+    background: var(--surface-alt);
+  }
+
+  .dropzone {
+    display: block;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--primary);
+    background: var(--bg-soft);
+  }
+  .dropzone.dragover { transform: scale(1.005); }
+  .dropzone input[type="file"] { display: none; }
+
+  .dz-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-pink));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dz-icon svg { width: 22px; height: 22px; stroke: #fff; }
+
+  .dz-text {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .dz-sub {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .source-hint {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+  .source-hint b { color: var(--primary-ink); font-weight: 600; }
+
+  /* ---------- Sensitivity toggle ---------- */
+  .sens-row {
+    margin-top: 18px;
+  }
+  .sens-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    margin-bottom: 8px;
+  }
+  .sens-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sens-btn {
+    flex: 1 1 0;
+    min-width: 80px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-soft);
+    padding: 9px 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .sens-btn:hover { color: var(--primary-ink); border-color: var(--primary); }
+  .sens-btn.active {
+    border-color: var(--primary);
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+
+  button {
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  }
+  button:hover:not(:disabled) { border-color: var(--primary); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+    border-color: var(--primary-strong);
+    color: #fff;
+    flex: 1;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.04); }
+
+  .btn-ghost { color: var(--ink-soft); background: var(--surface-alt); }
+  .btn-ghost:hover:not(:disabled) { color: var(--ink); }
+
+  /* ---------- Status line ---------- */
+  .status-line {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-size: 13px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .status-line.show { display: flex; }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex: none;
+    background: var(--muted);
+  }
+  .status-line.info { color: var(--ink); }
+  .status-line.info .status-dot { background: var(--primary); animation: pulse 1s infinite ease-in-out; }
+  .status-line.error { border-color: var(--danger-strong); color: var(--danger-ink); background: rgba(228, 140, 160, 0.10); }
+  .status-line.error .status-dot { background: var(--danger-strong); }
+  .status-line.success { border-color: var(--ok); color: var(--accent-mint-ink); background: rgba(168, 220, 198, 0.16); }
+  .status-line.success .status-dot { background: var(--ok); }
+  @keyframes pulse { 50% { opacity: 0.3; } }
+
+  /* ---------- Progress ---------- */
+  .progress-wrap { display: none; margin-bottom: 16px; }
+  .progress-wrap.show { display: block; }
+  .progress-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--ink-soft); margin-bottom: 7px;
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--bg-soft);
+    border-radius: 999px;
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--accent-pink));
+    width: 0%;
+    transition: width 0.2s linear;
+  }
+
+  /* ---------- Queue grid (thumbnail preview) ---------- */
+  .grid-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 22px 0 10px;
+    padding: 0 2px;
+  }
+  .grid-head .panel-label {
+    border: none; padding: 0; background: transparent;
+    font-size: 12px; font-weight: 600; color: var(--primary-ink);
+  }
+  .grid-head .count { font-size: 12px; color: var(--ink-soft); }
+
+  .page-grid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 8px;
+  }
+  .page-grid.show { display: grid; }
+
+  .page-cell {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .page-cell img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .page-num {
+    position: absolute;
+    bottom: 4px; left: 4px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(66, 59, 77, 0.65);
+    border-radius: 6px;
+    padding: 1px 6px;
+  }
+  .page-cell.cut { box-shadow: 0 0 0 2px var(--danger-strong), var(--shadow-sm); }
+  .page-cell.keep { box-shadow: 0 0 0 2px var(--ok), var(--shadow-sm); }
+  .page-cell.skip { box-shadow: 0 0 0 2px var(--muted), var(--shadow-sm); opacity: 0.7; }
+
+  /* ---------- Log ---------- */
+  .log-panel { display: none; }
+  .log-panel.show { display: block; }
+  #logContent {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 11.5px;
+    line-height: 1.7;
+    max-height: 180px;
+    overflow-y: auto;
+    color: var(--ink-soft);
+  }
+  #logContent .fail { color: var(--danger-strong); }
+  #logContent .ok { color: var(--accent-mint-ink); }
+  #logContent .cut { color: var(--danger-strong); }
+  #logContent .skip { color: var(--muted); }
+  #logContent div { border-bottom: 1px dashed var(--border); padding: 3px 0; }
+  #logContent div:last-child { border-bottom: none; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  .footnote {
+    margin-top: 22px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-line.info .status-dot { animation: none; }
+  }
+
+  /* ---------- Responsive: mobile ---------- */
+  @media (max-width: 480px) {
+    .wrap { padding: 20px 14px 60px; }
+    .masthead { padding: 14px 16px; }
+    .masthead h1 { font-size: 17px; }
+    .issue-tag { font-size: 10px; padding: 5px 10px; }
+    .btn-row { flex-direction: column; }
+    .sens-btn { min-width: 0; }
+    .page-grid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    .indicia { padding: 22px 14px; }
+  }
+
+  @media (max-width: 360px) {
+    .issue-tag { display: none; }
+  }
+
+  /* ---------- Responsive: tablet ---------- */
+  @media (min-width: 640px) and (max-width: 899px) {
+    .wrap { max-width: 700px; }
+  }
+
+  /* ---------- Responsive: desktop ---------- */
+  @media (min-width: 900px) {
+    .wrap { max-width: 880px; padding-top: 44px; }
+    .panel-body { padding: 22px 26px; }
+    .panel-label { padding: 14px 26px; }
+    .indicia { padding: 34px 26px; }
+    .page-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+    .sens-btn { min-width: 100px; }
+    .masthead { padding: 20px 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="brand">
+      <h1>Banner Cut</h1>
+    </div>
+    <div class="issue-tag">Powered by OpenCV</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label"><span>Input</span></div>
+    <div class="panel-body">
+      <label class="indicia dropzone" id="dropzone" tabindex="0">
+        <input type="file" id="fileInput" multiple accept="image/*,.zip,application/zip,application/x-zip-compressed">
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="dz-text">Klik atau seret file ke sini</div>
+        <div class="dz-sub">Gambar atau file Zip</div>
+      </label>
+      <div class="source-hint" id="fileHint">Belum ada file yang dipilih.</div>
+
+      <div class="sens-row">
+        <span class="sens-label">Sensitivitas</span>
+        <div class="sens-group" id="sensGroup">
+          <button type="button" class="sens-btn" data-val="0.50">Rendah</button>
+          <button type="button" class="sens-btn active" data-val="0.58">Sedang</button>
+          <button type="button" class="sens-btn" data-val="0.70">Tinggi</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="processBtn" disabled>
+          <span id="btnText">Proses</span>
+        </button>
+        <button class="btn-ghost" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-line" id="statusArea">
+    <div class="status-dot"></div>
+    <span id="statusText"></span>
+  </div>
+
+  <div class="progress-wrap" id="progressArea">
+    <div class="progress-meta">
+      <span id="progressLabel">Memproses</span>
+      <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+  </div>
+
+  <div class="grid-head" id="gridHead" style="display:none;">
+    <span class="panel-label">Antrian</span>
+    <span class="count"><span id="imgCount">0</span> file</span>
+  </div>
+  <div class="page-grid" id="imageGrid"></div>
+
+  <div class="panel log-panel" id="logArea" style="margin-top:16px;">
+    <div class="panel-label"><span>Log</span></div>
+    <div class="panel-body">
+      <div id="logContent"></div>
+    </div>
+  </div>
+
+  <div class="footnote">Semua proses berjalan di browser Anda — gambar tidak pernah diunggah ke server mana pun.</div>
+
+</div>
+
+<!-- ===== HIDDEN BANNER REFERENCES (dari folder banner/) ===== -->
+<img id="banner690" src="banner/banner_690.png" style="display:none" crossorigin="anonymous">
+<img id="banner800" src="banner/banner_800.png" style="display:none" crossorigin="anonymous">
+<img id="banner1280" src="banner/banner_1280.png" style="display:none" crossorigin="anonymous">
+<img id="banner2000" src="banner/banner_2000.png" style="display:none" crossorigin="anonymous">
+
+<!-- ===== OPENCV (lokal, dari folder opencv/) ===== -->
+<script src="opencv/opencv.js"></script>
+
+<script>
+  // ============================================================
+  //  KONFIGURASI
+  //  Nilai-nilai ini mengatur ambang batas deteksi banner dan
+  //  perilaku umum aplikasi. Ubah dengan hati-hati — banyak
+  //  fungsi scoring di bawah bergantung pada nilai ini.
+  // ============================================================
+  let MATCH_THRESHOLD = 0.58;        // ambang skor kecocokan template (diubah oleh tombol sensitivitas)
+  const BANNER_HEIGHT = 200;         // tinggi (px) area banner yang dipindai & dipotong
+  const TEMPLATE_TIMEOUT_MS = 5000;  // batas waktu menunggu gambar referensi banner dimuat
+  const WIDTH_MATCH_TOLERANCE = 0.25; // toleransi selisih lebar gambar vs lebar template (25%)
+  const IMAGE_EXT_RE = /\.(jpe?g|png|webp|gif|bmp)$/i;
+
+  // ============================================================
+  //  STATE GLOBAL
+  // ============================================================
+  let templateMats = [];    // Mat OpenCV hasil pra-proses dari tiap template banner
+  let opencvReady = false;  // true setelah pustaka OpenCV.js selesai dimuat
+  let bannerReady = false;  // true setelah minimal satu template banner berhasil dimuat
+  let isProcessing = false; // guard agar proses tidak dijalankan dua kali bersamaan
+  let queuedFiles = [];     // antrean file: { name, blob, ext, thumbUrl }
+
+  // ============================================================
+  //  REFERENSI ELEMEN DOM
+  // ============================================================
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileHint = document.getElementById('fileHint');
+  const processBtn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  const resetBtn = document.getElementById('resetBtn');
+  const statusArea = document.getElementById('statusArea');
+  const statusText = document.getElementById('statusText');
+  const progressArea = document.getElementById('progressArea');
+  const progressBar = document.getElementById('progressBar');
+  const progressPercent = document.getElementById('progressPercent');
+  const progressLabel = document.getElementById('progressLabel');
+  const gridHead = document.getElementById('gridHead');
+  const imgCount = document.getElementById('imgCount');
+  const imageGrid = document.getElementById('imageGrid');
+  const logArea = document.getElementById('logArea');
+  const logContent = document.getElementById('logContent');
+  const sensGroup = document.getElementById('sensGroup');
+
+  // ============================================================
+  //  HELPER UI
+  // ============================================================
+
+  /** Menambahkan satu baris ke panel log dengan stempel waktu. */
+  function log(msg, cls) {
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const c = cls ? ` class="${cls}"` : '';
+    logContent.innerHTML += `<div${c}>[${time}] ${escapeHtml(msg)}</div>`;
+    logContent.scrollTop = logContent.scrollHeight;
+    logArea.classList.add('show');
+  }
+
+  /** Meng-escape karakter HTML agar aman ditampilkan sebagai teks log. */
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+
+  function showStatus(msg, type) {
+    statusArea.className = 'status-line show' + (type ? ' ' + type : ' info');
+    statusText.textContent = msg;
+  }
+
+  function hideStatus() { statusArea.classList.remove('show'); }
+
+  /** Memperbarui bar & label progres (persentase dihitung dari current/total). */
+  function setProgress(current, total, label) {
+    progressArea.classList.add('show');
+    const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+    progressBar.style.width = pct + '%';
+    progressPercent.textContent = pct + '%';
+    progressLabel.textContent = label || `Memproses ${current}/${total}`;
+  }
+
+  function hideProgress() { progressArea.classList.remove('show'); }
+
+  /** Tombol Proses hanya aktif jika OpenCV+template siap, ada file, dan tidak sedang memproses. */
+  function updateProcessButton() {
+    processBtn.disabled = !(bannerReady && queuedFiles.length > 0 && !isProcessing);
+  }
+
+  /** Membatasi nilai ke rentang [0, 1]; mengembalikan 0 untuk NaN/Infinity. */
+  function clamp01(v) {
+    if (!Number.isFinite(v)) return 0;
+    return Math.max(0, Math.min(1, v));
+  }
+
+  /** Menghapus Mat OpenCV dengan aman (tidak melempar error jika sudah dihapus/null). */
+  function safeDelete(mat) {
+    try { if (mat && typeof mat.delete === 'function') mat.delete(); } catch (_) {}
+  }
+
+  /** Membersihkan semua Mat template banner dari memori sebelum dimuat ulang. */
+  function deleteTemplateMats() {
+    templateMats.forEach(t => {
+      safeDelete(t.raw); safeDelete(t.gray); safeDelete(t.edge); safeDelete(t.mask); safeDelete(t.dark);
+    });
+    templateMats = [];
+  }
+
+  /** Mengambil ekstensi file (huruf kecil, tanpa titik), default 'jpg' jika tidak ada. */
+  function getExt(name) {
+    const m = name.split('.').pop();
+    return (m || 'jpg').toLowerCase();
+  }
+
+  /** Memetakan ekstensi file ke MIME type untuk keperluan encode canvas.toBlob(). */
+  function mimeForExt(ext) {
+    if (ext === 'png') return 'image/png';
+    if (ext === 'webp') return 'image/webp';
+    if (ext === 'gif' || ext === 'bmp') return 'image/png';
+    return 'image/jpeg';
+  }
+
+  // ============================================================
+  //  INISIALISASI OPENCV
+  // ============================================================
+
+  /**
+   * Melakukan polling hingga OpenCV.js selesai dimuat (maks ~20 detik),
+   * lalu memuat template banner referensi. Ini adalah titik masuk yang
+   * dipanggil sekali saat DOMContentLoaded.
+   */
+  function waitForOpenCv() {
+    showStatus('Memuat OpenCV…', 'info');
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      if (typeof cv !== 'undefined' && cv.Mat) {
+        clearInterval(interval);
+        opencvReady = true;
+        log('OpenCV siap, memuat template banner', 'ok');
+        showStatus('Memuat template banner…', 'info');
+
+        const imgElements = [
+          document.getElementById('banner690'),
+          document.getElementById('banner800'),
+          document.getElementById('banner1280'),
+          document.getElementById('banner2000')
+        ].filter(Boolean);
+
+        const ok = await loadBannerReferences(imgElements);
+        if (ok) {
+          const dims = templateMats.map(t => `${t.width}x${t.height}`).join(', ');
+          log(`template dimuat: ${dims}`, 'ok');
+          showStatus('Siap. Pilih file gambar atau zip.', 'success');
+        } else {
+          log('gagal memuat template banner dari folder banner/', 'fail');
+          showStatus('Gagal memuat template banner.', 'error');
+        }
+        updateProcessButton();
+      } else if (++attempts > 200) {
+        clearInterval(interval);
+        log('opencv.js gagal dimuat — periksa opencv/opencv.js', 'fail');
+        showStatus('OpenCV.js tidak ditemukan.', 'error');
+      }
+    }, 100);
+  }
+
+  // ============================================================
+  //  UTILITAS OPENCV
+  //  Fungsi-fungsi bantu untuk konversi canvas <-> Mat dan
+  //  pra-pemrosesan gambar (grayscale, edge, mask) yang dipakai
+  //  berulang oleh proses pemuatan template maupun deteksi.
+  // ============================================================
+
+  /**
+   * Menggambar elemen <img> ke <canvas>, dengan opsi crop area tertentu.
+   * @param {HTMLImageElement} img - gambar sumber
+   * @param {{sx,sy,sw,sh}|null} crop - area crop (koordinat & ukuran sumber), atau null untuk gambar penuh
+   * @returns {HTMLCanvasElement}
+   */
+  function imgToCanvas(img, crop = null) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (crop) {
+      canvas.width = crop.sw; canvas.height = crop.sh;
+      ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
+    } else {
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+    }
+    return canvas;
+  }
+
+  /** Membaca canvas sebagai Mat RGBA lalu mengonversinya ke grayscale. Mat RGBA sementara langsung dihapus. */
+  function canvasToGrayMat(canvas) {
+    const rgba = cv.imread(canvas);
+    const gray = new cv.Mat();
+    cv.cvtColor(rgba, gray, cv.COLOR_RGBA2GRAY);
+    rgba.delete();
+    return gray;
+  }
+
+  /**
+   * Menyiapkan satu set representasi dari gambar template banner:
+   * ukuran seragam (raw), histogram equalization (gray), tepi Canny (edge),
+   * dan mask area gelap (dark). Set yang sama dihasilkan untuk region
+   * gambar yang diperiksa agar keduanya bisa dibandingkan apple-to-apple.
+   */
+  function preprocessTemplate(grayMat, targetWidth, targetHeight) {
+    const raw = new cv.Mat(), equalized = new cv.Mat(), blurred = new cv.Mat(), edge = new cv.Mat();
+    cv.resize(grayMat, raw, new cv.Size(targetWidth, targetHeight), 0, 0, cv.INTER_AREA);
+    cv.equalizeHist(raw, equalized);
+    cv.GaussianBlur(equalized, blurred, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
+    cv.Canny(blurred, edge, 45, 135);
+    const dark = createDarkMask(raw);
+    blurred.delete();
+    return { raw, gray: equalized, edge, dark };
+  }
+
+  /** Membuat mask biner dari piksel non-putih (konten) pada template, lalu dilebarkan (dilate) sedikit. */
+  function createTemplateMask(rawMat) {
+    const mask = new cv.Mat();
+    const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5));
+    cv.threshold(rawMat, mask, 246, 255, cv.THRESH_BINARY_INV);
+    cv.dilate(mask, mask, kernel);
+    kernel.delete();
+    return mask;
+  }
+
+  /** Membuat mask area gelap/bertulisan (teks logo, dsb) untuk dibandingkan antar region & template. */
+  function createDarkMask(rawMat) {
+    const dark = new cv.Mat();
+    const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3));
+    cv.threshold(rawMat, dark, 135, 255, cv.THRESH_BINARY_INV);
+    cv.morphologyEx(dark, dark, cv.MORPH_OPEN, kernel);
+    cv.dilate(dark, dark, kernel);
+    kernel.delete();
+    return dark;
+  }
+
+  /** Menghitung variansi intensitas piksel (std² dari mean) — dipakai sebagai indikator kepolosan area. */
+  function getMatVariance(grayMat) {
+    const mean = new cv.Mat(), std = new cv.Mat();
+    cv.meanStdDev(grayMat, mean, std);
+    const stdVal = std.doubleAt(0, 0) || 0;
+    mean.delete(); std.delete();
+    return stdVal * stdVal;
+  }
+
+  /** Skor kemiripan berbasis template matching OpenCV (TM_CCOEFF_NORMED) — dua Mat berukuran sama. */
+  function matchSameSize(src, templ) {
+    const result = new cv.Mat();
+    cv.matchTemplate(src, templ, result, cv.TM_CCOEFF_NORMED);
+    const mm = cv.minMaxLoc(result);
+    result.delete();
+    return clamp01(mm.maxVal);
+  }
+
+  /** Skor kemiripan berbasis rata-rata selisih absolut piksel (1 = identik, 0 = sangat berbeda). */
+  function meanAbsSimilarity(src, templ) {
+    const diff = new cv.Mat();
+    cv.absdiff(src, templ, diff);
+    const mean = cv.mean(diff)[0] || 255;
+    diff.delete();
+    return clamp01(1 - (mean / 255));
+  }
+
+  /** Sama seperti meanAbsSimilarity, tapi hanya menghitung piksel di dalam area mask template. */
+  function maskedMeanAbsSimilarity(src, templ, mask) {
+    const diff = new cv.Mat();
+    cv.absdiff(src, templ, diff);
+    const mean = cv.mean(diff, mask)[0] || 255;
+    diff.delete();
+    return clamp01(1 - (mean / 255));
+  }
+
+  /**
+   * Membandingkan dua mask area gelap (region vs template) menggunakan
+   * kombinasi F1-score (precision+recall) dan IoU (intersection over union).
+   * Dipakai untuk mendeteksi kemiripan pola teks/logo pada banner.
+   */
+  function darkMaskSimilarity(regionDark, templateDark, regionDarkPixels, templateDarkPixels) {
+    if (!regionDarkPixels || !templateDarkPixels) return 0;
+    const intersection = new cv.Mat(), union = new cv.Mat();
+    cv.bitwise_and(regionDark, templateDark, intersection);
+    cv.bitwise_or(regionDark, templateDark, union);
+    const interCount = cv.countNonZero(intersection);
+    const unionCount = cv.countNonZero(union);
+    intersection.delete(); union.delete();
+    const recall = templateDarkPixels ? interCount / templateDarkPixels : 0;
+    const precision = regionDarkPixels ? interCount / regionDarkPixels : 0;
+    const iou = unionCount ? interCount / unionCount : 0;
+    const f1 = (precision + recall) > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+    return clamp01((f1 * 0.75) + (iou * 0.25));
+  }
+
+  /** Menunggu elemen <img> referensi banner selesai dimuat, dengan batas waktu TEMPLATE_TIMEOUT_MS. */
+  function waitForTemplateImage(img) {
+    return new Promise(resolve => {
+      if (img.complete && img.naturalWidth > 0) { resolve(img); return; }
+      let done = false;
+      const finish = value => { if (done) return; done = true; img.onload = null; img.onerror = null; resolve(value); };
+      const timer = setTimeout(() => finish(null), TEMPLATE_TIMEOUT_MS);
+      img.onload = () => { clearTimeout(timer); finish(img.naturalWidth > 0 ? img : null); };
+      img.onerror = () => { clearTimeout(timer); finish(null); };
+    });
+  }
+
+  // ============================================================
+  //  PEMUATAN TEMPLATE BANNER
+  // ============================================================
+
+  /**
+   * Memuat & memproses semua gambar referensi banner (elemen <img> tersembunyi
+   * di folder banner/) menjadi Mat OpenCV siap-bandingkan, lalu menyimpannya
+   * ke templateMats. Template dengan konten terlalu sedikit (maskPixels < 250)
+   * diabaikan karena kemungkinan gambar kosong/gagal dimuat.
+   * @returns {boolean} true jika minimal satu template berhasil dimuat
+   */
+  async function loadBannerReferences(imgElements) {
+    if (!opencvReady) return false;
+    const loadedImgs = (await Promise.all(imgElements.map(waitForTemplateImage))).filter(Boolean);
+    deleteTemplateMats();
+
+    for (const img of loadedImgs) {
+      if (!img.naturalWidth || !img.naturalHeight) continue;
+      const sourceCanvas = imgToCanvas(img);
+      const grayRaw = canvasToGrayMat(sourceCanvas);
+
+      const tmplWidth = img.naturalWidth;
+      const tmplHeight = img.naturalHeight || BANNER_HEIGHT;
+
+      const normalized = preprocessTemplate(grayRaw, tmplWidth, tmplHeight);
+      const mask = createTemplateMask(normalized.raw);
+      const maskPixels = cv.countNonZero(mask);
+      const edgePixels = cv.countNonZero(normalized.edge);
+      const darkPixels = cv.countNonZero(normalized.dark);
+      grayRaw.delete();
+
+      if (maskPixels < 250) {
+        safeDelete(normalized.raw); safeDelete(normalized.gray); safeDelete(normalized.edge);
+        safeDelete(normalized.dark); safeDelete(mask);
+        continue;
+      }
+
+      templateMats.push({
+        id: img.id, width: tmplWidth, height: tmplHeight, maskPixels, edgePixels, darkPixels,
+        raw: normalized.raw, gray: normalized.gray, edge: normalized.edge, dark: normalized.dark, mask
+      });
+    }
+
+    bannerReady = templateMats.length > 0;
+    return bannerReady;
+  }
+
+  // ============================================================
+  //  DETEKSI BANNER SATU GAMBAR PENUH
+  //  Untuk kasus gambar pendek (tinggi <= 250px) yang isinya HANYA
+  //  banner itu sendiri (bukan foto konten + banner tersambung).
+  //  Deteksi dilakukan lewat serangkaian heuristik gambar khas
+  //  banner: dominan putih, simetris, konten terpusat, dan tepi kosong.
+  //  Setiap tahap bisa gagal lebih awal (early return) jika ciri khas
+  //  banner tidak terpenuhi, agar hemat komputasi.
+  // ============================================================
+  function detectFullImageBanner(grayMat, imgWidth, imgHeight) {
+    // Banner biasanya berbentuk pendek & lebar — di luar rentang ini, bukan kandidat
+    if (imgHeight > 250 || imgHeight < 150 || imgWidth < 300) {
+      return { isBanner: false, score: 0, confidence: 'none' };
+    }
+    const h = imgHeight, w = imgWidth;
+
+    // Tahap 1: rasio latar putih — banner biasanya 80-99% putih polos
+    const bgMask = new cv.Mat();
+    cv.threshold(grayMat, bgMask, 245, 255, cv.THRESH_BINARY);
+    const whiteCount = cv.countNonZero(bgMask);
+    const whiteRatio = whiteCount / (w * h);
+    bgMask.delete();
+    if (whiteRatio < 0.80 || whiteRatio > 0.99) {
+      return { isBanner: false, score: 0, confidence: 'none', reason: 'white_ratio' };
+    }
+
+    // Tahap 2: simetri kiri-kanan — bandingkan separuh kiri dengan cerminan separuh kanan
+    const halfW = Math.floor(w / 2);
+    const leftHalf = grayMat.roi(new cv.Rect(0, 0, halfW, h));
+    const rightHalf = grayMat.roi(new cv.Rect(w - halfW, 0, halfW, h));
+    const flippedRight = new cv.Mat();
+    cv.flip(rightHalf, flippedRight, 1);
+    const symDiff = new cv.Mat();
+    cv.absdiff(leftHalf, flippedRight, symDiff);
+    const symMean = cv.mean(symDiff)[0] || 255;
+    const symmetryScore = clamp01(1 - (symMean / 255));
+    safeDelete(flippedRight); safeDelete(symDiff);
+    safeDelete(leftHalf); safeDelete(rightHalf);
+    if (symmetryScore < 0.30) {
+      return { isBanner: false, score: 0, confidence: 'none', reason: 'asymmetric' };
+    }
+
+    // Tahap 3: distribusi konten per-zona (atas/tengah/bawah) — banner biasanya
+    // punya pola: sedikit konten di atas & bawah, sedikit lebih banyak di tengah
+    const thirdH = Math.floor(h / 3);
+    const zones = [{ y: 0, label: 'top' }, { y: thirdH, label: 'mid' }, { y: 2 * thirdH, label: 'bot' }];
+    let validZones = 0;
+    for (const z of zones) {
+      const zone = grayMat.roi(new cv.Rect(0, z.y, w, thirdH));
+      const mask = new cv.Mat();
+      const thresh = z.label === 'top' ? 240 : 140;
+      cv.threshold(zone, mask, thresh, 255, cv.THRESH_BINARY_INV);
+      const nonWhite = cv.countNonZero(mask);
+      const ratio = nonWhite / (w * thirdH);
+      mask.delete();
+      zone.delete();
+      if (z.label === 'top' && ratio >= 0.01 && ratio <= 0.15) validZones++;
+      if (z.label === 'mid' && ratio >= 0.02 && ratio <= 0.20) validZones++;
+      if (z.label === 'bot' && ratio >= 0.01 && ratio <= 0.15) validZones++;
+    }
+    if (validZones < 3) {
+      return { isBanner: false, score: 0, confidence: 'none', reason: 'content_distribution' };
+    }
+
+    // Tahap 4: konten harus terpusat — bagian tengah berisi konten, tepi kiri/kanan kosong
+    const centerW = Math.floor(w * 0.5);
+    const edgeW = Math.floor(w * 0.25);
+    const centerX = Math.floor((w - centerW) / 2);
+    const centerZone = grayMat.roi(new cv.Rect(centerX, 0, centerW, h));
+    const leftEdgeZone = grayMat.roi(new cv.Rect(0, 0, edgeW, h));
+    const rightEdgeZone = grayMat.roi(new cv.Rect(w - edgeW, 0, edgeW, h));
+
+    const cMask = new cv.Mat(), lMask = new cv.Mat(), rMask = new cv.Mat();
+    cv.threshold(centerZone, cMask, 240, 255, cv.THRESH_BINARY_INV);
+    cv.threshold(leftEdgeZone, lMask, 240, 255, cv.THRESH_BINARY_INV);
+    cv.threshold(rightEdgeZone, rMask, 240, 255, cv.THRESH_BINARY_INV);
+    const centerContent = cv.countNonZero(cMask) / (centerW * h);
+    const leftEdgeContent = cv.countNonZero(lMask) / (edgeW * h);
+    const rightEdgeContent = cv.countNonZero(rMask) / (edgeW * h);
+    cMask.delete(); lMask.delete(); rMask.delete();
+    centerZone.delete(); leftEdgeZone.delete(); rightEdgeZone.delete();
+
+    const edgesEmpty = leftEdgeContent < 0.05 && rightEdgeContent < 0.05;
+    const centerHasContent = centerContent > 0.03;
+    if (!edgesEmpty || !centerHasContent) {
+      return { isBanner: false, score: 0, confidence: 'none', reason: 'not_centered' };
+    }
+
+    // Skor akhir gabungan dari semua tahap; ambang 0.75 untuk dianggap banner
+    const score = clamp01((whiteRatio * 0.25) + (symmetryScore * 0.20) + (validZones === 3 ? 0.50 : 0) + (edgesEmpty ? 0.05 : 0));
+
+    return {
+      isBanner: score >= 0.75,
+      score,
+      confidence: score >= 0.85 ? 'high' : score >= 0.75 ? 'medium' : 'low',
+      details: { whiteRatio, symmetryScore, centerContent, leftEdgeContent, rightEdgeContent }
+    };
+  }
+
+  // ============================================================
+  //  PENILAIAN REGION (TOP / BOTTOM)
+  //  Untuk gambar bertinggi normal yang kemungkinan punya banner
+  //  tersambung di bagian atas atau bawah (bukan gambar banner utuh).
+  // ============================================================
+
+  /**
+   * Mengambil strip setinggi BANNER_HEIGHT dari bagian atas/bawah gambar
+   * dan menyiapkan representasi grayscale, tepi, serta mask gelapnya
+   * untuk dibandingkan dengan template banner.
+   * @param {HTMLImageElement} img
+   * @param {'top'|'bottom'} regionType
+   * @returns {object|null} null jika gambar lebih pendek dari BANNER_HEIGHT
+   */
+  function getRegionData(img, regionType) {
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (h <= BANNER_HEIGHT) return null;
+
+    const sx = 0;
+    const sy = regionType === 'top' ? 0 : h - BANNER_HEIGHT;
+    const canvas = imgToCanvas(img, { sx, sy, sw: w, sh: BANNER_HEIGHT });
+    const grayRaw = canvasToGrayMat(canvas);
+    const variance = getMatVariance(grayRaw);
+
+    const edge = new cv.Mat(), blurred = new cv.Mat();
+    cv.GaussianBlur(grayRaw, blurred, new cv.Size(3, 3), 0, 0, cv.BORDER_DEFAULT);
+    cv.Canny(blurred, edge, 45, 135);
+
+    const dark = createDarkMask(grayRaw);
+    const edgePixels = cv.countNonZero(edge);
+    const darkPixels = cv.countNonZero(dark);
+    blurred.delete();
+
+    return { cropHeight: BANNER_HEIGHT, variance, edgePixels, darkPixels, raw: grayRaw, edge, dark, width: w };
+  }
+
+  /**
+   * Membandingkan satu region (strip atas/bawah gambar) dengan semua
+   * template banner yang tersedia, dan mengembalikan skor terbaik.
+   * Setiap template diskalakan ke ukurannya sendiri lalu dibandingkan
+   * lewat 4 metode berbeda (mask, grayscale, edge, dark-area) yang
+   * digabung menjadi satu skor tertimbang, disesuaikan dengan
+   * seberapa cocok lebar gambar dengan lebar template (widthConfidence).
+   */
+  function scoreRegionWithTemplates(region) {
+    let best = { score: 0, grayScore: 0, edgeScore: 0, diffScore: 0, maskScore: 0, darkScore: 0, structureScore: 0, templateId: '-', method: '-', widthDiff: Infinity };
+
+    for (const tmpl of templateMats) {
+      const widthDiff = Math.abs(region.width - tmpl.width) / region.width;
+      const widthConfidence = widthDiff <= WIDTH_MATCH_TOLERANCE ? 1.0 : widthDiff <= 0.50 ? 0.7 : 0.4;
+
+      const resizedRaw = new cv.Mat(), resizedGray = new cv.Mat(), resizedEdge = new cv.Mat(), resizedDark = new cv.Mat();
+
+      cv.resize(region.raw, resizedRaw, new cv.Size(tmpl.width, tmpl.height), 0, 0, cv.INTER_AREA);
+      cv.equalizeHist(resizedRaw, resizedGray);
+      cv.resize(region.edge, resizedEdge, new cv.Size(tmpl.width, tmpl.height), 0, 0, cv.INTER_NEAREST);
+      cv.resize(region.dark, resizedDark, new cv.Size(tmpl.width, tmpl.height), 0, 0, cv.INTER_NEAREST);
+
+      const maskScore = maskedMeanAbsSimilarity(resizedRaw, tmpl.raw, tmpl.mask);
+      const grayScore = matchSameSize(resizedGray, tmpl.gray);
+      const diffScore = meanAbsSimilarity(resizedRaw, tmpl.raw);
+      let edgeScore = 0, darkScore = 0;
+      if (region.edgePixels > 60 && tmpl.edgePixels > 60) edgeScore = matchSameSize(resizedEdge, tmpl.edge);
+      if (region.darkPixels > 20 && tmpl.darkPixels > 20) darkScore = darkMaskSimilarity(resizedDark, tmpl.dark, region.darkPixels, tmpl.darkPixels);
+
+      const structureScore = Math.max(grayScore, edgeScore, darkScore);
+      // Bobot: mask 25%, grayscale 30%, edge 18%, dark-area 25%, diff kasar 2%
+      const combined = clamp01((maskScore * 0.25) + (grayScore * 0.30) + (edgeScore * 0.18) + (darkScore * 0.25) + (diffScore * 0.02));
+      const adjustedScore = combined * widthConfidence;
+
+      safeDelete(resizedRaw); safeDelete(resizedGray); safeDelete(resizedEdge); safeDelete(resizedDark);
+
+      if (adjustedScore > best.score) {
+        best = { score: adjustedScore, grayScore, edgeScore, diffScore, maskScore, darkScore, structureScore, templateId: tmpl.id, method: widthDiff <= WIDTH_MATCH_TOLERANCE ? 'width-match' : 'width-scaled', widthDiff };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Titik masuk utama deteksi banner untuk satu sisi gambar (top/bottom).
+   * Gambar pendek (<= 250px) dianggap kandidat banner-satu-gambar-penuh
+   * dan diperiksa lewat detectFullImageBanner(); gambar normal diperiksa
+   * lewat perbandingan strip region dengan template (scoreRegionWithTemplates).
+   */
+  function checkBannerRegion(img, regionType) {
+    const h = img.naturalHeight, w = img.naturalWidth;
+
+    if (h <= 250) {
+      const canvas = imgToCanvas(img);
+      const grayFull = canvasToGrayMat(canvas);
+      const result = detectFullImageBanner(grayFull, w, h);
+      safeDelete(grayFull);
+      return { isBanner: result.isBanner, isFullImageBanner: true, score: result.score, maxVal: result.score, cropHeight: h, confidence: result.confidence, method: 'full-image', templateId: '-', reason: result.reason || '' };
+    }
+
+    if (h <= BANNER_HEIGHT) {
+      return { isBanner: false, score: 0, maxVal: 0, cropHeight: BANNER_HEIGHT, variance: 0, confidence: 'none' };
+    }
+
+    const region = getRegionData(img, regionType);
+    if (!region) {
+      return { isBanner: false, score: 0, maxVal: 0, cropHeight: BANNER_HEIGHT, variance: 0, confidence: 'none' };
+    }
+
+    const best = scoreRegionWithTemplates(region);
+    // Skor mentah saja tidak cukup — perlu bukti "bentuk" tambahan agar tidak
+    // salah tangkap foto polos yang kebetulan berwarna serupa dengan banner.
+    const hasShapeEvidence = best.grayScore >= 0.30 || best.edgeScore >= 0.18 || best.darkScore >= 0.28;
+    const widthAcceptable = best.widthDiff <= 0.50;
+    // Jalur alternatif: bukti teks/logo yang sangat kuat bisa lolos meski skor gabungan rendah
+    const strongTextEvidence = best.darkScore >= 0.42 && (best.grayScore >= 0.22 || best.edgeScore >= 0.12 || best.maskScore >= 0.88);
+    const veryHighTemplateEvidence = best.maskScore >= 0.93 && best.grayScore >= 0.45;
+
+    const normalMatch = best.score >= MATCH_THRESHOLD && hasShapeEvidence && widthAcceptable;
+    const isBanner = normalMatch || strongTextEvidence || veryHighTemplateEvidence;
+    const confidence = best.score >= 0.78 && hasShapeEvidence && widthAcceptable ? 'high' : isBanner ? 'medium' : 'low';
+
+    safeDelete(region.raw); safeDelete(region.edge); safeDelete(region.dark);
+
+    return {
+      isBanner, isFullImageBanner: false, score: best.score, maxVal: best.score,
+      grayScore: best.grayScore, edgeScore: best.edgeScore, diffScore: best.diffScore, maskScore: best.maskScore, darkScore: best.darkScore, structureScore: best.structureScore,
+      cropHeight: BANNER_HEIGHT, variance: region.variance, edgePixels: region.edgePixels, darkPixels: region.darkPixels,
+      templateId: best.templateId, widthDiff: best.widthDiff, method: best.method, confidence
+    };
+  }
+
+  // ============================================================
+  //  PEMOTONGAN GAMBAR
+  // ============================================================
+
+  /**
+   * Memotong (crop) area banner dari sisi atas atau bawah gambar,
+   * lalu meng-encode hasilnya sebagai Blob sesuai MIME type sumber.
+   * @param {HTMLImageElement} img
+   * @param {'top'|'bottom'} regionType - sisi yang dipotong/dibuang
+   * @param {string} mime - MIME target hasil encode
+   * @param {number} cropHeight - tinggi area yang dipotong (px)
+   */
+  async function cropImageRegion(img, regionType, mime, cropHeight = BANNER_HEIGHT) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const cutHeight = Math.min(BANNER_HEIGHT, Math.max(1, h - 1));
+
+    if (regionType === 'top') {
+      canvas.width = w; canvas.height = h - cutHeight;
+      ctx.drawImage(img, 0, cutHeight, w, h - cutHeight, 0, 0, w, h - cutHeight);
+    } else {
+      canvas.width = w; canvas.height = h - cutHeight;
+      ctx.drawImage(img, 0, 0, w, h - cutHeight, 0, 0, w, h - cutHeight);
+    }
+    const quality = (mime === 'image/jpeg' || mime === 'image/webp') ? 0.94 : undefined;
+    return new Promise(resolve => canvas.toBlob(resolve, mime, quality));
+  }
+
+  // ============================================================
+  //  PENGUMPULAN FILE (gambar tunggal + isi arsip zip)
+  // ============================================================
+
+  /** Menghindari nama file bentrok di antrean dengan menambahkan " (n)" sebelum ekstensi. */
+  function addUniqueName(map, name) {
+    if (!map.has(name)) { map.set(name, 1); return name; }
+    const count = map.get(name);
+    map.set(name, count + 1);
+    const dot = name.lastIndexOf('.');
+    const base = dot > -1 ? name.slice(0, dot) : name;
+    const ext = dot > -1 ? name.slice(dot) : '';
+    return `${base} (${count})${ext}`;
+  }
+
+  /** Mengubah FileList menjadi daftar item {name, blob, ext} — membuka isi .zip jika ada. */
+  async function collectFiles(fileList) {
+    const usedNames = new Map();
+    queuedFiles.forEach(f => usedNames.set(f.name, 1));
+    const items = [];
+    const files = Array.from(fileList);
+
+    for (const file of files) {
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith('.zip')) {
+        log(`membuka arsip: ${file.name}`);
+        try {
+          const zip = await JSZip.loadAsync(file);
+          let countInZip = 0;
+          for (const relPath of Object.keys(zip.files)) {
+            const entry = zip.files[relPath];
+            if (entry.dir) continue;
+            if (!IMAGE_EXT_RE.test(relPath)) continue;
+            const blob = await entry.async('blob');
+            const finalName = addUniqueName(usedNames, relPath);
+            items.push({ name: finalName, blob, ext: getExt(relPath) });
+            countInZip++;
+          }
+          log(`${countInZip} gambar ditemukan di ${file.name}`, 'ok');
+        } catch (err) {
+          log(`gagal membaca arsip ${file.name}: ${err.message}`, 'fail');
+        }
+      } else if (file.type.startsWith('image/') || IMAGE_EXT_RE.test(lower)) {
+        const finalName = addUniqueName(usedNames, file.name);
+        items.push({ name: finalName, blob: file, ext: getExt(file.name) });
+      } else {
+        log(`dilewati (bukan gambar/zip): ${file.name}`);
+      }
+    }
+    return items;
+  }
+
+  /** Merender ulang grid thumbnail antrean file berdasarkan queuedFiles saat ini. */
+  function renderQueueGrid() {
+    if (queuedFiles.length === 0) {
+      gridHead.style.display = 'none';
+      imageGrid.classList.remove('show');
+      imageGrid.innerHTML = '';
+      fileHint.innerHTML = 'Belum ada file yang dipilih.';
+      return;
+    }
+    gridHead.style.display = 'flex';
+    imageGrid.classList.add('show');
+    imgCount.textContent = queuedFiles.length;
+
+    const totalBytes = queuedFiles.reduce((sum, f) => sum + (f.blob.size || 0), 0);
+    const sizeStr = totalBytes > 1024 * 1024 ? (totalBytes / (1024 * 1024)).toFixed(1) + ' MB' : (totalBytes / 1024).toFixed(0) + ' KB';
+    fileHint.innerHTML = `<b>${queuedFiles.length}</b> gambar siap &middot; ${sizeStr}`;
+
+    imageGrid.innerHTML = '';
+    queuedFiles.forEach((item, idx) => {
+      if (!item.thumbUrl) item.thumbUrl = URL.createObjectURL(item.blob);
+      const cell = document.createElement('div');
+      cell.className = 'page-cell';
+      cell.dataset.idx = idx;
+      cell.innerHTML = `
+        <img src="${item.thumbUrl}" alt="${escapeHtml(item.name)}" loading="lazy">
+        <span class="page-num">${String(idx + 1).padStart(3, '0')}</span>
+      `;
+      imageGrid.appendChild(cell);
+    });
+  }
+
+  /** Menandai sel thumbnail ke-idx dengan status hasil proses ('cut' | 'keep' | 'skip'). */
+  function markCell(idx, statusClass) {
+    const cell = imageGrid.querySelector(`.page-cell[data-idx="${idx}"]`);
+    if (cell) cell.classList.add(statusClass);
+  }
+
+  // ============================================================
+  //  PROSES UTAMA
+  //  Memindai tiap file dalam antrean, mendeteksi & memotong banner
+  //  bila ditemukan, lalu mengemas semua hasil ke dalam satu file ZIP.
+  // ============================================================
+  async function processAll() {
+    if (isProcessing || queuedFiles.length === 0 || !bannerReady) return;
+    isProcessing = true;
+    processBtn.disabled = true;
+    resetBtn.disabled = true;
+    btnText.textContent = 'Memproses…';
+    logContent.innerHTML = '';
+    logArea.classList.add('show');
+    showStatus(`Memproses ${queuedFiles.length} gambar…`, 'info');
+    setProgress(0, queuedFiles.length, 'Memproses');
+
+    const zip = new JSZip();
+    let success = 0, topCut = 0, bottomCut = 0, original = 0, fullBannerSkipped = 0, failed = 0;
+
+    for (let i = 0; i < queuedFiles.length; i++) {
+      const item = queuedFiles[i];
+      log(`[${i + 1}/${queuedFiles.length}] ${item.name}`);
+
+      try {
+        const objUrl = item.thumbUrl || URL.createObjectURL(item.blob);
+        const img = await new Promise((resolve, reject) => {
+          const imgEl = new Image();
+          imgEl.onload = () => resolve(imgEl);
+          imgEl.onerror = () => reject(new Error('gagal mendekode gambar'));
+          imgEl.src = objUrl;
+        });
+
+        const mime = mimeForExt(item.ext);
+        const top = checkBannerRegion(img, 'top');
+        const bottom = checkBannerRegion(img, 'bottom');
+        let finalBlob;
+
+        if (top.isFullImageBanner && top.isBanner) {
+          fullBannerSkipped++;
+          log(`dilewati, banner satu gambar penuh (${top.confidence}, skor ${top.score.toFixed(3)})`, 'skip');
+          markCell(i, 'skip');
+          setProgress(i + 1, queuedFiles.length);
+          continue;
+        }
+
+        if (top.isBanner && bottom.isBanner) {
+          if (top.score >= bottom.score) {
+            finalBlob = await cropImageRegion(img, 'top', mime, top.cropHeight);
+            topCut++;
+            log(`banner atas & bawah terdeteksi, menghapus ATAS (skor ${top.score.toFixed(3)})`, 'cut');
+          } else {
+            finalBlob = await cropImageRegion(img, 'bottom', mime, bottom.cropHeight);
+            bottomCut++;
+            log(`banner atas & bawah terdeteksi, menghapus BAWAH (skor ${bottom.score.toFixed(3)})`, 'cut');
+          }
+          markCell(i, 'cut');
+        } else if (top.isBanner) {
+          finalBlob = await cropImageRegion(img, 'top', mime, top.cropHeight);
+          topCut++;
+          log(`banner atas dihapus (skor ${top.score.toFixed(3)})`, 'cut');
+          markCell(i, 'cut');
+        } else if (bottom.isBanner) {
+          finalBlob = await cropImageRegion(img, 'bottom', mime, bottom.cropHeight);
+          bottomCut++;
+          log(`banner bawah dihapus (skor ${bottom.score.toFixed(3)})`, 'cut');
+          markCell(i, 'cut');
+        } else {
+          finalBlob = item.blob;
+          original++;
+          log(`tidak ada banner terdeteksi (atas ${top.score.toFixed(3)}, bawah ${bottom.score.toFixed(3)})`, 'ok');
+          markCell(i, 'keep');
+        }
+
+        zip.file(item.name, finalBlob);
+        success++;
+      } catch (err) {
+        failed++;
+        log(`error pada ${item.name}: ${err.message}`, 'fail');
+        markCell(i, 'skip');
+      }
+
+      setProgress(i + 1, queuedFiles.length, `Memproses ${i + 1}/${queuedFiles.length}`);
+      await new Promise(r => setTimeout(r, 5));
+    }
+
+    log(`selesai: ${success} berhasil (atas:${topCut} bawah:${bottomCut} dilewati:${fullBannerSkipped} tanpa perubahan:${original} gagal:${failed})`, 'ok');
+
+    if (success === 0) {
+      showStatus('Tidak ada gambar yang berhasil diproses.', 'error');
+      log('tidak ada gambar yang berhasil diproses', 'fail');
+      finishProcessing();
+      return;
+    }
+
+    setProgress(queuedFiles.length, queuedFiles.length, 'Membangun ZIP');
+    log('membangun zip');
+
+    try {
+      const zipBlob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      }, (metadata) => {
+        setProgress(metadata.percent, 100, 'Membangun ZIP');
+      });
+
+      saveAs(zipBlob, 'bannercut.zip');
+      showStatus(`Selesai. ${success} gambar disimpan${failed > 0 ? `, ${failed} gagal` : ''}.`, 'success');
+      log(`zip: bannercut.zip (${(zipBlob.size / 1024 / 1024).toFixed(2)} MB)`, 'ok');
+    } catch (err) {
+      showStatus('Gagal membangun ZIP: ' + err.message, 'error');
+      log('gagal membangun zip: ' + err.message, 'fail');
+    }
+
+    finishProcessing();
+  }
+
+  /** Mengembalikan UI ke kondisi siap setelah proses selesai (berhasil maupun gagal). */
+  function finishProcessing() {
+    isProcessing = false;
+    hideProgress();
+    processBtn.disabled = false;
+    resetBtn.disabled = false;
+    btnText.textContent = 'Proses & Unduh ZIP';
+    updateProcessButton();
+  }
+
+  // ============================================================
+  //  RESET
+  // ============================================================
+
+  /** Mengosongkan antrean file & UI terkait, membebaskan object URL thumbnail dari memori. */
+  function resetAll() {
+    if (isProcessing) return;
+    queuedFiles.forEach(f => { if (f.thumbUrl) URL.revokeObjectURL(f.thumbUrl); });
+    queuedFiles = [];
+    fileInput.value = '';
+    renderQueueGrid();
+    hideStatus();
+    hideProgress();
+    logContent.innerHTML = '';
+    logArea.classList.remove('show');
+    showStatus(bannerReady ? 'Siap. Pilih file gambar atau zip.' : 'Menunggu OpenCV…', bannerReady ? 'success' : 'info');
+    updateProcessButton();
+  }
+
+  // ============================================================
+  //  EVENT DOM
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', () => {
+    waitForOpenCv();
+
+    fileInput.addEventListener('change', async (e) => {
+      const newItems = await collectFiles(e.target.files);
+      queuedFiles = queuedFiles.concat(newItems);
+      renderQueueGrid();
+      updateProcessButton();
+      fileInput.value = '';
+    });
+
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+
+    ['dragover', 'dragenter'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'dragend'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer?.files?.length) {
+        const newItems = await collectFiles(e.dataTransfer.files);
+        queuedFiles = queuedFiles.concat(newItems);
+        renderQueueGrid();
+        updateProcessButton();
+      }
+    });
+
+    processBtn.addEventListener('click', processAll);
+    resetBtn.addEventListener('click', resetAll);
+
+    sensGroup.addEventListener('click', (e) => {
+      const btn = e.target.closest('.sens-btn');
+      if (!btn) return;
+      sensGroup.querySelectorAll('.sens-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      MATCH_THRESHOLD = parseFloat(btn.dataset.val);
+      log(`sensitivitas diatur ke ${btn.dataset.val} (${btn.textContent.trim()})`);
+    });
+  });
+</script>
+</body>
+</html>
