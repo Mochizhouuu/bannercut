@@ -549,7 +549,7 @@
   //  HELPER UI
   // ============================================================
 
-  /** Menambahkan satu baris ke panel log dengan stempel waktu. */
+  /** Adds a timestamped log entry. */
   function log(msg, cls) {
     const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
     const c = cls ? ` class="${cls}"` : '';
@@ -558,7 +558,7 @@
     logArea.classList.add('show');
   }
 
-  /** Meng-escape karakter HTML agar aman ditampilkan sebagai teks log. */
+  /** Escapes HTML-sensitive characters. */
   function escapeHtml(s) {
     return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   }
@@ -570,7 +570,7 @@
 
   function hideStatus() { statusArea.classList.remove('show'); }
 
-  /** Memperbarui bar & label progres (persentase dihitung dari current/total). */
+  /** Updates progress indicators. */
   function setProgress(current, total, label) {
     progressArea.classList.add('show');
     const pct = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -581,23 +581,23 @@
 
   function hideProgress() { progressArea.classList.remove('show'); }
 
-  /** Tombol Proses hanya aktif jika OpenCV+template siap, ada file, dan tidak sedang memproses. */
+  /** Updates process button state. */
   function updateProcessButton() {
     processBtn.disabled = !(bannerReady && queuedFiles.length > 0 && !isProcessing);
   }
 
-  /** Membatasi nilai ke rentang [0, 1]; mengembalikan 0 untuk NaN/Infinity. */
+  /** Clamps a value to the 0–1 range. */
   function clamp01(v) {
     if (!Number.isFinite(v)) return 0;
     return Math.max(0, Math.min(1, v));
   }
 
-  /** Menghapus Mat OpenCV dengan aman (tidak melempar error jika sudah dihapus/null). */
+  /** Safely disposes an OpenCV Mat instance. */
   function safeDelete(mat) {
     try { if (mat && typeof mat.delete === 'function') mat.delete(); } catch (_) {}
   }
 
-  /** Membersihkan semua Mat template banner dari memori sebelum dimuat ulang. */
+  /** Releases all loaded banner templates. */
   function deleteTemplateMats() {
     templateMats.forEach(t => {
       safeDelete(t.raw); safeDelete(t.gray); safeDelete(t.edge); safeDelete(t.mask); safeDelete(t.dark);
@@ -605,13 +605,13 @@
     templateMats = [];
   }
 
-  /** Mengambil ekstensi file (huruf kecil, tanpa titik), default 'jpg' jika tidak ada. */
+  /** Returns a normalized file extension. */
   function getExt(name) {
     const m = name.split('.').pop();
     return (m || 'jpg').toLowerCase();
   }
 
-  /** Memetakan ekstensi file ke MIME type untuk keperluan encode canvas.toBlob(). */
+  /** Maps file extensions to MIME types. */
   function mimeForExt(ext) {
     if (ext === 'png') return 'image/png';
     if (ext === 'webp') return 'image/webp';
